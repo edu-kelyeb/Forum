@@ -5,7 +5,8 @@ db = mysql.connector.connect(
     host="localhost",
     user="root",
     password="",
-    database=""
+    database="forum"
+)
 
 app = Flask(__name__)
 JSON_FILE = 'data.json'
