@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Forum</title>
+</head>
+<body>
+
+    <h1>Forum för fårskallar</h1>
+
+    <h2>Välkommen till forumet!</h2>
+
+    <h3>Skriv ett nytt inlägg</h3>
+
+    <form method="POST">
+
+        <textarea
+            name="content"
+            placeholder="Skriv ditt inlägg här..."
+            required>
+        </textarea>
+
+        <br><br>
+
+        <button type="submit">Publicera inlägg</button>
+
+    </form>
+
+    <hr>
+
+    <h2>Tidigare inlägg</h2>
+
+    {% for post in posts %}
+
+        <div>
+            <h3>{{ post[0] }}</h3>
+
+            <p>{{ post[1] }}</p>
+        </div>
+
+        <hr>
+
+    {% endfor %}
+
+    <a href="/logout">Logga ut</a>
+
+</body>
+</html>
