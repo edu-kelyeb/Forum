@@ -24,7 +24,7 @@ def load_posts():
         return[]
 
 @app.route('/', methods=['GET', 'POST'])
-def json_demo():
+def index():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -35,23 +35,26 @@ def json_demo():
         conn.commit()
         conn.close()
 
-        return redirect(url_for('json_demo'))
+        return redirect(url_for('index'))
     conn = get_db()
     cur = conn.cursor(dictornary=True)
     cur.execute('SELECT name,text FROM posts ORDER BY id DESC')
     posts = cur.fetchall()
     conn.close()
 
-    rows = ''.join()
+    rows = ''.join(f'<div class="post"><h2>{post["username"]}</h2><p>{post["password"]}</p></div>' for post in posts)
 
+    return f'''
+        <h1>Nytt inlägg</h1>
+        <form metod="POST">
+            <input type="text" name="username" placeholder="Användarnamn" required>
+            <input type="password" name="password" placeholder="Lösenord" required>
+            <button type="submit">Skicka</button>
+        </form>
+        <h2>inlägg</h2>
+        <ul>{rows}</ul>
+'''
+        
 
-    
-
-
-
-
-
-
-
-
-    return render_template_string(HTML)
+    if __name__ == '__main__':
+        app.run(debug=True, host='0.0.0.0')
