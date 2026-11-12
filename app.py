@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template_string, request, url_for
+from flask import Flask, redirect, render_template_string, request, url_for, session
 import mysql.connector
 from werkzeug.security import generate_password_hash
 
@@ -6,12 +6,18 @@ app = Flask(__name__)
 app.secret_key = 'Forum'
 
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    username = session.get('username')
+
+    if username:
+        return redirect(url_for('createpost'))
+
     db = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="yeah",
+        password="",
         database="forum",
     )
     cur = None
@@ -21,14 +27,17 @@ def index():
         if request.method == 'POST':
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
-            cur.execute(
-                "INSERT INTO users (username, password) VALUES (%s, %s)",
-                (username, generate_password_hash(password)),
-            )
+
+            cur.execute('SELECT * FROM users WHERE username = %s', (username,))
+            user = cur.fetchone()
+
+            if not user:
+                return "Användare hittades inte.", 404
+
             db.commit()
             return redirect(url_for('index'))
 
-        cur.execute('SELECT name, text FROM posts ORDER BY id DESC')
+        cur.execute('SELECT username FROM users')
         posts = cur.fetchall()
     finally:
         if cur is not None:
@@ -44,10 +53,41 @@ def index():
         </form>
         <h2>Inlägg</h2>
         {% for post in posts %}
-            <div class="post"><h2>{{ post["name"] }}</h2><p>{{ post["text"] }}</p></div>
+            <div class="post"><h2>{{ post["username"] }}</h2><p>{{ post["content"] }}</p></div>
         {% endfor %}
         
     ''', posts=posts)
+
+@app.route('/createpost', methods=['GET', 'POST'])
+def createpost():
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        database="forum",
+    )
+
+    cur = None
+    if request.method == 'POST':
+        content = request.form.get('inlägg', '').strip()
+
+        try:
+            cur = db.cursor()
+            cur.execute('INSERT INTO posts (inlägg, användernamn) VALUES (%s, %s)', (content, request.form.get('username', '').strip()))
+            db.commit()
+            return redirect(url_for('index'))
+        finally:
+            if cur is not None:
+                cur.close()
+            db.close()
+
+
+    return render_template_string('''
+        <h1>Skapa nytt inlägg</h1>
+        <form method="POST">
+            <textarea name="inlägg" placeholder="inlägg" required></textarea>
+            <button type="submit">Skicka</button>
+        </form>
+    ''')
 
 
 if __name__ == '__main__':
