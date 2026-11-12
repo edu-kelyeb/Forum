@@ -3,6 +3,7 @@ import mysql.connector
 from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
+app.secret_key = 'Forum'
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -10,7 +11,7 @@ def index():
     db = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="",
+        password="yeah",
         database="forum",
     )
     cur = None
