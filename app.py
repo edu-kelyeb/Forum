@@ -34,7 +34,7 @@ def index():
 
         if user and user[1] == password:
             session['username'] = username
-            return redirect(url_for('index'))
+            return redirect(url_for('createpost'))
         return 'Felaktigt användarnamn eller lösenord. <a href="/">Försök igen</a>'
 
     return '''
