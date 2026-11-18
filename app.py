@@ -2,61 +2,49 @@ from flask import Flask, redirect, render_template_string, request, url_for, ses
 import mysql.connector
 from werkzeug.security import generate_password_hash
 
-app = Flask(__name__)
-app.secret_key = 'Forum'
-
-
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    username = session.get('username')
-
-    if username:
-        return redirect(url_for('createpost'))
-
-    db = mysql.connector.connect(
+db = mysql.connector.connect(
         host="localhost",
         user="root",
         password="",
         database="forum",
     )
-    cur = None
 
-    try:
-        cur = db.cursor(dictionary=True)
-        if request.method == 'POST':
-            username = request.form.get('username', '').strip()
-            password = request.form.get('password', '')
 
-            cur.execute('SELECT * FROM users WHERE username = %s', (username,))
-            user = cur.fetchone()
 
-            if not user:
-                return "Användare hittades inte.", 404
+app = Flask(__name__)
+app.secret_key = 'Forum'
 
-            db.commit()
+@app.route('/')
+def home():
+    username = session.get('username')
+    if username:
+        return f'Välkommen, {username}! <a href="/createpost">Skapa inlägg</a> | <a href="/logout">Logga ut</a>'
+    return 'Välkommen! <a href="/login">Logga in</a> | <a href="/register">Registrera</a>'
+
+@app.route('/login', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        cursor = db.cursor()
+        cursor.execute('SELECT username, password FROM users WHERE username = %s', (username,))
+        user = cursor.fetchone()
+        cursor.close()
+
+        if user and user[1] == password:
+            session['username'] = username
             return redirect(url_for('index'))
+        return 'Felaktigt användarnamn eller lösenord. <a href="/">Försök igen</a>'
 
-        cur.execute('SELECT username FROM users')
-        posts = cur.fetchall()
-    finally:
-        if cur is not None:
-            cur.close()
-        db.close()
-
-    return render_template_string('''
-        <h1>Nytt inlägg</h1>
+    return '''
+        <h1>Inloggning</h1>
         <form method="POST">
             <input type="text" name="username" placeholder="Användarnamn" required>
             <input type="password" name="password" placeholder="Lösenord" required>
-            <button type="submit">Skicka</button>
+            <input type="submit" value="Logga in">
         </form>
-        <h2>Inlägg</h2>
-        {% for post in posts %}
-            <div class="post"><h2>{{ post["username"] }}</h2><p>{{ post["content"] }}</p></div>
-        {% endfor %}
-        
-    ''', posts=posts)
+        '''
 
 @app.route('/createpost', methods=['GET', 'POST'])
 def createpost():
@@ -68,13 +56,16 @@ def createpost():
 
     cur = None
     if request.method == 'POST':
+        username = session.get('username')
+        if not username:
+            return redirect(url_for('index'))
         content = request.form.get('inlägg', '').strip()
 
         try:
             cur = db.cursor()
-            cur.execute('INSERT INTO posts (inlägg, användernamn) VALUES (%s, %s)', (content, request.form.get('username', '').strip()))
+            cur.execute('INSERT INTO posts (inlägg, användernamn) VALUES (%s, %s)', (content, username))
             db.commit()
-            return redirect(url_for('index'))
+            return redirect(url_for('createposts'))
         finally:
             if cur is not None:
                 cur.close()
